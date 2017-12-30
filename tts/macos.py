@@ -19,10 +19,10 @@ CONF_VOICE = 'voice'
 
 # Get installed voices and languages
 _output = subprocess.check_output(['/usr/local/bin/reattach-to-user-namespace', '/usr/bin/say', '-v', '?']).splitlines()
-SUPPORT_LANGUAGES = list(set([ v.split()[1].decode() for v in _output ]))
+SUPPORT_LANGUAGES = list(set([ v.split()[1].decode().replace('_', '-') for v in _output ]))
 SUPPORT_VOICES = [ v.split()[0].decode() for v in _output ]
 
-DEFAULT_LANG  = 'en_US'
+DEFAULT_LANG  = 'en-US'
 DEFAULT_VOICE = 'Alex'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
