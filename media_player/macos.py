@@ -1,5 +1,6 @@
 """
 Provide functionality to interact with afplay on macOS.
+
 For more details about this platform, please refer to the documentation at
 https://github.com/rotx/homeassistant-components/
 """
@@ -7,36 +8,43 @@ import os
 import shutil
 import subprocess
 import logging
-import voluptuous as vol
 import urllib.request
 
+import voluptuous as vol
+
+import homeassistant.helpers.config_validation as cv
 from homeassistant.components.media_player import (
-    SUPPORT_PLAY_MEDIA, MediaPlayerDevice, MEDIA_TYPE_MUSIC)
+    PLATFORM_SCHEMA, SUPPORT_PLAY_MEDIA, MediaPlayerDevice, MEDIA_TYPE_MUSIC)
 from homeassistant.const import (CONF_NAME, STATE_IDLE, STATE_PLAYING)
 
 _LOGGER = logging.getLogger(__name__)
 
+DEFAULT_NAME = 'macos'
+
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
+    vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string
+})
+
+# pylint: disable=unused-argument
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up the macos platform."""
-    if shutil.which("afplay", path="/usr/bin") is None:
-        _LOGGER.error("'/usr/bin/afplay' was not found")
+    if shutil.which('afplay', path='/usr/bin') is None:
+        _LOGGER.error("'/usr/bin/afplay' not found")
         return
-    if shutil.which("reattach-to-user-namespace", path="/usr/local/bin") is None:
-        _LOGGER.error("'/usr/local/bin/reattach-to-user-namespace' was not found")
+    if shutil.which('reattach-to-user-namespace',
+                    path='/usr/local/bin') is None:
+        _LOGGER.error("'/usr/local/bin/reattach-to-user-namespace' not found")
         return
-    add_devices([MacOSDevice()])
+    name = config.get(CONF_NAME)
+    add_devices([MacOSDevice(name)])
 
 class MacOSDevice(MediaPlayerDevice):
     """Representation of a macos player."""
 
-    def __init__(self):
+    def __init__(self, name):
         """Initialize the macos device."""
-        self._name = 'macos'
+        self._name = name
         self._state = STATE_IDLE
-        
-    def update(self):
-        """Get the latest details from the device."""
-        return True
 
     @property
     def name(self):
@@ -66,13 +74,18 @@ class MacOSDevice(MediaPlayerDevice):
                 "Invalid media type %s. Only %s is supported",
                 media_type, MEDIA_TYPE_MUSIC)
             return
-        
-        local_filename, msg = urllib.request.urlretrieve(media_id)
 
-        self._state = STATE_PLAYING
-        subprocess.call(['/usr/local/bin/reattach-to-user-namespace', '/usr/bin/afplay', local_filename])
-        self._state = STATE_IDLE
+        try:
+            fname = urllib.request.urlretrieve(media_id)[0]
 
-        os.unlink(local_filename)
+            self._state = STATE_PLAYING
+            subprocess.call(['/usr/local/bin/reattach-to-user-namespace',
+                             '/usr/bin/afplay', fname])
+            self._state = STATE_IDLE
 
+        except OSError:
+            _LOGGER.error("Error trying to request and play %s", media_id)
+            return
 
+        finally:
+            os.remove(fname)
