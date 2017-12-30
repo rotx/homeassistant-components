@@ -31,10 +31,6 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     if shutil.which('afplay', path='/usr/bin') is None:
         _LOGGER.error("'/usr/bin/afplay' not found")
         return
-    if shutil.which('reattach-to-user-namespace',
-                    path='/usr/local/bin') is None:
-        _LOGGER.error("'/usr/local/bin/reattach-to-user-namespace' not found")
-        return
     name = config.get(CONF_NAME)
     add_devices([MacOSDevice(name)])
 
@@ -79,8 +75,7 @@ class MacOSDevice(MediaPlayerDevice):
             fname = urllib.request.urlretrieve(media_id)[0]
 
             self._state = STATE_PLAYING
-            subprocess.call(['/usr/local/bin/reattach-to-user-namespace',
-                             '/usr/bin/afplay', fname])
+            subprocess.call(['/usr/bin/afplay', fname])
             self._state = STATE_IDLE
 
         except OSError:
