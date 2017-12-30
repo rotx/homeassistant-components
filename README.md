@@ -31,6 +31,8 @@ tts:
 Available voices are listed in System Preferences (Accessibility > Speech as of High Sierra).
 Make sure you download at least one high-quality voice first. Alex, Ava, and Samantha are good choices.
 
+_Note: While it's possible to configure a language such as en-US, the language setting is ignored. Select a matching voice instead._
+
 ### Component Test
 
 Use the developer tools in the web interface to call the service `tts.macos_say` with service data `{"message": "Hello world, can you hear me now?"}`.
@@ -42,7 +44,7 @@ If you have not yet configured a media player, Home Assistant will add a log ent
 
 In any case, the sythesized speech can be found in the cache directory `tts`, for example:
 ```
--rw-r--r--  1 _ha _ha 44552 Dec 29 23:55 3f19336891bcaabfb5_en_us_-_macos.m4a
+-rw-r--r--  1 _ha _ha 44552 Dec 29 23:55 cafebabedeadbeef0badabbababafeca_en-us_-_macos.m4a
 ```
 
 You can play this file using `afplay` (or, read on).
