@@ -35,7 +35,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_VOICE, default=DEFAULT_VOICE): vol.In(SUPPORT_VOICES)
 })
 
-# pylint: disable=unused-argument
+
 @asyncio.coroutine
 def async_get_engine(hass, config):
     """Set up macOS speech component."""
@@ -47,6 +47,7 @@ def async_get_engine(hass, config):
         _LOGGER.error("'/usr/local/bin/reattach-to-user-namespace' not found")
         return False
     return MacOSProvider(config[CONF_LANG], config[CONF_VOICE])
+
 
 class MacOSProvider(Provider):
     """The macOS TTS provider."""
