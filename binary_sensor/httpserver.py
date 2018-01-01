@@ -48,7 +48,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
-# pylint: disable=unused-argument
 @asyncio.coroutine
 def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     """Set up the httpserver binary sensor platform."""
@@ -99,7 +98,8 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
 
 class RequestHandler(BaseHTTPRequestHandler):
     """Basic HTTP server with GET only, and without logging."""
-    # pylint: disable=C0103
+
+    # pylint: disable=invalid-name
     def do_GET(self):
         """Override the GET method to trigger a binary sensor."""
         action = self.server.request_paths.get(self.path)
@@ -111,13 +111,13 @@ class RequestHandler(BaseHTTPRequestHandler):
             action()
         self.end_headers()
 
-    # pylint: disable=W0622
+    # pylint: disable=redefined-builtin
     def log_message(self, format, *args):
         """Log HTTP access to HA log (don't log to stderr)."""
         _LOGGER.info("%s - - [%s] %s",
                      self.address_string(),
                      self.log_date_time_string(),
-                     (format%args))
+                     (format % args))
 
 
 class HTTPThread(threading.Thread):
@@ -131,12 +131,11 @@ class HTTPThread(threading.Thread):
         self.server = HTTPServer(('', port), RequestHandler)
         self.server.request_paths = request_paths
 
-
     def run(self):
         """Handle incoming HTTP requests."""
         try:
             self.server.serve_forever()
-        except Exception as ex:
+        except IOError as ex:
             _LOGGER.error("Exception %s: Closing HTTP server", str(ex))
         finally:
             self.server.server_close()
