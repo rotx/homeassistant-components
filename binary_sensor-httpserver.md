@@ -51,7 +51,7 @@ Copy `binary_sensor/httpserver.py` to `custom_components/binary_sensor/httpserve
 In `configuration.yaml`, add the new _httpserver_ binary_sensor platform. Add one _sensor_ for each HTTP
 path you wish to respond to. Home Assistant will create one binary sensor for each.
 The `listen_port` is an available local port (the _PORT_ mentioned above).
-`reset` is the time in seconds after triggering when the sensor returns to its "off" state.
+`reset_delay` is the time in seconds after triggering when the sensor returns to its "off" state.
 `device_class` is a standard binary_sensor device class.
 
 ```
@@ -62,8 +62,8 @@ binary_sensor:
       foscam_motion:
         friendly_name: "Garage Motion"
         device_class: motion
-        path: "/motion/garage"
-        reset: 20
+        set_path: "/motion/garage"
+        reset_delay: 20
 ```
 
 Restart Home Assistant.

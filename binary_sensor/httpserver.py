@@ -24,8 +24,8 @@ from homeassistant.helpers.entity import async_generate_entity_id
 _LOGGER = logging.getLogger(__name__)
 
 CONF_LISTEN_PORT = 'listen_port'
-CONF_PATH = 'path'
-CONF_RESET = 'reset'
+CONF_PATH = 'set_path'
+CONF_RESET = 'reset_delay'
 
 DEFAULT_LISTEN_PORT = 8130
 DEFAULT_RESET = 20
