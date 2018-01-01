@@ -25,7 +25,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string
 })
 
-# pylint: disable=unused-argument
+
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up the macos platform."""
     if shutil.which('afplay', path='/usr/bin') is None:
@@ -33,6 +33,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
         return
     name = config.get(CONF_NAME)
     add_devices([MacOSDevice(name)])
+
 
 class MacOSDevice(MediaPlayerDevice):
     """Representation of a macos player."""
@@ -64,7 +65,6 @@ class MacOSDevice(MediaPlayerDevice):
 
     def play_media(self, media_type, media_id, **kwargs):
         """Play media from a URL or file."""
-
         if not media_type == MEDIA_TYPE_MUSIC:
             _LOGGER.error(
                 "Invalid media type %s. Only %s is supported",
