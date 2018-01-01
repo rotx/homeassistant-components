@@ -23,18 +23,23 @@ from homeassistant.helpers.entity import async_generate_entity_id
 
 _LOGGER = logging.getLogger(__name__)
 
+CONF_INITIAL_STATE = 'initial_state'
 CONF_LISTEN_PORT = 'listen_port'
-CONF_PATH = 'set_path'
-CONF_RESET = 'reset_delay'
+CONF_RESET_DELAY = 'reset_delay'
+CONF_RESET_PATH = 'reset_path'
+CONF_SET_PATH = 'set_path'
 
+DEFAULT_INITIAL_STATE = False
 DEFAULT_LISTEN_PORT = 8130
-DEFAULT_RESET = 20
 
 SENSOR_SCHEMA = vol.Schema({
     vol.Optional(ATTR_FRIENDLY_NAME): cv.string,
-    vol.Required(CONF_PATH): cv.string,
     vol.Optional(CONF_DEVICE_CLASS): DEVICE_CLASSES_SCHEMA,
-    vol.Optional(CONF_RESET, default=DEFAULT_RESET): cv.positive_int
+    vol.Optional(CONF_INITIAL_STATE, default=DEFAULT_INITIAL_STATE):
+        cv.boolean,
+    vol.Optional(CONF_RESET_DELAY, default=0): cv.positive_int,
+    vol.Optional(CONF_RESET_PATH): cv.string,
+    vol.Required(CONF_SET_PATH): cv.string
 })
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -53,20 +58,32 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     listen_port = config.get(CONF_LISTEN_PORT)
 
     try:
-        httpserver = HTTPThread(hass, request_paths, listen_port)
+        httpserver = HTTPThread(request_paths, listen_port)
     except (OSError, PermissionError) as ex:
         _LOGGER.error("Exception %s: Cannot start HTTP server", str(ex))
         return False
 
     for device, device_config in config[CONF_SENSORS].items():
-        friendly_name = device_config.get(ATTR_FRIENDLY_NAME, device)
         device_class = device_config.get(CONF_DEVICE_CLASS)
-        path = device_config.get(CONF_PATH)
-        reset = device_config.get(CONF_RESET)
+        friendly_name = device_config.get(ATTR_FRIENDLY_NAME, device)
+        initial_state = device_config.get(CONF_INITIAL_STATE)
+        reset_delay = device_config.get(CONF_RESET_DELAY)
+        set_path = device_config.get(CONF_SET_PATH)
+        reset_path = device_config.get(CONF_RESET_PATH)
+
+        if set_path == reset_path:
+            _LOGGER.error("set_path and reset_path %s cannot be the same",
+                          set_path)
+            return False
+
+        is_toggle = (reset_path is None and reset_delay == 0)
 
         this_sensor = HttpServerBinarySensor(hass, device, friendly_name,
-                                             device_class, path, reset)
-        request_paths[path] = this_sensor
+                                             device_class, reset_delay,
+                                             initial_state, is_toggle)
+        request_paths[set_path] = this_sensor.set_state
+        if reset_path is not None:
+            request_paths[reset_path] = this_sensor.reset_state
         sensors.append(this_sensor)
 
     if not sensors:
@@ -85,33 +102,32 @@ class RequestHandler(BaseHTTPRequestHandler):
     # pylint: disable=C0103
     def do_GET(self):
         """Override the GET method to trigger a binary sensor."""
-        bsensor = self.server.request_paths.get(self.path)
-        if bsensor is None:
+        action = self.server.request_paths.get(self.path)
+        if action is None:
             self.send_error(404)
         else:
             self.send_response(200)
-            _LOGGER.debug("Setting %s", bsensor.entity_id)
-            bsensor.set_state(True)
+            _LOGGER.debug("Action for %s", self.path)
+            action()
         self.end_headers()
 
     # pylint: disable=W0622
     def log_message(self, format, *args):
-        """Don't log to stderr."""
-        _LOGGER.debug("%s - - [%s] %s",
-                      self.address_string(),
-                      self.log_date_time_string(),
-                      (format%args))
+        """Log HTTP access to HA log (don't log to stderr)."""
+        _LOGGER.info("%s - - [%s] %s",
+                     self.address_string(),
+                     self.log_date_time_string(),
+                     (format%args))
 
 
 class HTTPThread(threading.Thread):
     """Background thread for HTTP server."""
 
-    def __init__(self, hass, request_paths, port=DEFAULT_LISTEN_PORT):
+    def __init__(self, request_paths, port=DEFAULT_LISTEN_PORT):
         """Initialize HTTP server thread."""
         super(HTTPThread, self).__init__()
 
         self.daemon = True
-        self.hass = hass
         self.server = HTTPServer(('', port), RequestHandler)
         self.server.request_paths = request_paths
 
@@ -135,16 +151,16 @@ class HttpServerBinarySensor(BinarySensorDevice):
     """representation of a httpserver binary sensor."""
 
     def __init__(self, hass, device, friendly_name, device_class,
-                 path, reset):
+                 reset_delay, initial_state, is_toggle):
         """Initialize the httpserver sensor."""
         self.hass = hass
         self.entity_id = async_generate_entity_id(
             ENTITY_ID_FORMAT, device, hass=hass)
         self._name = friendly_name
         self._device_class = device_class
-        self._state = False
-        self._path = path
-        self._reset_delay = reset
+        self._reset_delay = reset_delay
+        self._state = initial_state
+        self._is_toggle = is_toggle
         self._timer = None
 
     @property
@@ -159,30 +175,31 @@ class HttpServerBinarySensor(BinarySensorDevice):
 
     @property
     def name(self):
-        """Return the name of the httpserver sensor."""
+        """Return the name of the httpserver binary sensor."""
         return self._name
 
     @property
     def is_on(self):
-        """Return true if the binary sensor is on."""
+        """Return true if the httpserver binary sensor is on."""
         return self._state
 
-    def set_state(self, state):
-        """Set state of binary sensor."""
-        self._state = state
+    def reset_state(self):
+        """Reset the state of the httpserver binary sensor."""
+        self._state = False
         self.async_schedule_update_ha_state()
 
-        def _delayed_reset():
-            """Timer callback for sensor update."""
-            _LOGGER.debug("%s Resetting state (%ssec)",
-                          self._name, self._reset_delay)
-            self._state = False
-            self.async_schedule_update_ha_state()
+    def set_state(self):
+        """Toggle or set the state of the httpserver binary sensor."""
+        if self._is_toggle:
+            self._state = not self._state
+        else:
+            self._state = True
+        self.async_schedule_update_ha_state()
 
-        # Set timer to clear state
-        if self._timer is not None and self._timer.isAlive():
-            self._timer.cancel()
+        # Set timer to auto-clear state
+        if self._reset_delay != 0:
+            if self._timer is not None and self._timer.isAlive():
+                self._timer.cancel()
 
-        self._timer = threading.Timer(self._reset_delay, _delayed_reset)
-        self._timer.start()
-
+            self._timer = threading.Timer(self._reset_delay, self.reset_state)
+            self._timer.start()
