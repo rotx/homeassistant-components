@@ -52,7 +52,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     """Set up the httpserver binary sensor platform."""
     sensors = []
-    request_paths = dict()
+    request_paths = {}
 
     listen_port = config.get(CONF_LISTEN_PORT)
 
@@ -125,7 +125,7 @@ class HTTPThread(threading.Thread):
 
     def __init__(self, request_paths, port=DEFAULT_LISTEN_PORT):
         """Initialize HTTP server thread."""
-        super(HTTPThread, self).__init__()
+        super().__init__()
 
         self.daemon = True
         self.server = HTTPServer(('', port), RequestHandler)
