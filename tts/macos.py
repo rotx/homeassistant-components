@@ -4,16 +4,15 @@ Support for the macOS speech service.
 For more details about this component, please refer to the documentation at
 https://github.com/rotx/homeassistant-components
 """
-import os
-import tempfile
-import shutil
-import subprocess
 import asyncio
 import logging
+import os
+import shutil
+import subprocess
+import tempfile
 
 import voluptuous as vol
-
-from homeassistant.components.tts import Provider, PLATFORM_SCHEMA, CONF_LANG
+from homeassistant.components.tts import CONF_LANG, PLATFORM_SCHEMA, Provider
 
 _LOGGER = logging.getLogger(__name__)
 

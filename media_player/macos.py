@@ -4,18 +4,19 @@ Provide functionality to interact with afplay on macOS.
 For more details about this platform, please refer to the documentation at
 https://github.com/rotx/homeassistant-components/
 """
+import logging
 import os
 import shutil
 import subprocess
-import logging
 import urllib.request
 
 import voluptuous as vol
-
 import homeassistant.helpers.config_validation as cv
-from homeassistant.components.media_player import (
-    PLATFORM_SCHEMA, SUPPORT_PLAY_MEDIA, MediaPlayerDevice, MEDIA_TYPE_MUSIC)
-from homeassistant.const import (CONF_NAME, STATE_IDLE, STATE_PLAYING)
+from homeassistant.components.media_player import (MEDIA_TYPE_MUSIC,
+                                                   PLATFORM_SCHEMA,
+                                                   SUPPORT_PLAY_MEDIA,
+                                                   MediaPlayerDevice)
+from homeassistant.const import CONF_NAME, STATE_IDLE, STATE_PLAYING
 
 _LOGGER = logging.getLogger(__name__)
 
