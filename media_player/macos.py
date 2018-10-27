@@ -81,7 +81,6 @@ class MacOSDevice(MediaPlayerDevice):
 
         except OSError:
             _LOGGER.error("Error trying to request and play %s", media_id)
-            return
 
         finally:
-            os.remove(fname)
+            urllib.request.urlcleanup()
