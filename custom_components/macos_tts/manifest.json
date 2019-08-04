@@ -1,0 +1,8 @@
+{
+  "domain": "macos_tts",
+  "name": "macOS TTS and Media Player",
+  "documentation": "https://github.com/rotx/homeassistant-components/",
+  "dependencies": [],
+  "codeowners": ["@rotx"],
+  "requirements": []
+}

@@ -12,24 +12,25 @@ import urllib.request
 
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
-from homeassistant.components.media_player import (MEDIA_TYPE_MUSIC,
-                                                   PLATFORM_SCHEMA,
-                                                   SUPPORT_PLAY_MEDIA,
-                                                   MediaPlayerDevice)
+from homeassistant.components.media_player import MediaPlayerDevice, PLATFORM_SCHEMA
+from homeassistant.components.media_player.const import (
+    MEDIA_TYPE_MUSIC,
+    SUPPORT_PLAY_MEDIA,
+)
 from homeassistant.const import CONF_NAME, STATE_IDLE, STATE_PLAYING
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = 'macos'
+DEFAULT_NAME = "macos"
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string
-})
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+    {vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string}
+)
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up the macos platform."""
-    if shutil.which('afplay', path='/usr/bin') is None:
+    if shutil.which("afplay", path="/usr/bin") is None:
         _LOGGER.error("'/usr/bin/afplay' not found")
         return
     name = config.get(CONF_NAME)
@@ -69,14 +70,16 @@ class MacOSDevice(MediaPlayerDevice):
         if not media_type == MEDIA_TYPE_MUSIC:
             _LOGGER.error(
                 "Invalid media type %s. Only %s is supported",
-                media_type, MEDIA_TYPE_MUSIC)
+                media_type,
+                MEDIA_TYPE_MUSIC,
+            )
             return
 
         try:
             fname = urllib.request.urlretrieve(media_id)[0]
 
             self._state = STATE_PLAYING
-            subprocess.call(['/usr/bin/afplay', fname])
+            subprocess.call(["/usr/bin/afplay", fname])
             self._state = STATE_IDLE
 
         except OSError:

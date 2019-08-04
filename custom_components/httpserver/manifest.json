@@ -1,0 +1,8 @@
+{
+  "domain": "macos",
+  "name": "Binary Sensor triggered by GET HTTP request",
+  "documentation": "https://github.com/rotx/homeassistant-components/",
+  "dependencies": [],
+  "codeowners": ["@rotx"],
+  "requirements": []
+}

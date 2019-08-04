@@ -13,39 +13,44 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import voluptuous as vol
 
 from homeassistant.components.binary_sensor import (
-    BinarySensorDevice, ENTITY_ID_FORMAT, PLATFORM_SCHEMA,
-    DEVICE_CLASSES_SCHEMA)
-from homeassistant.const import (
-    ATTR_FRIENDLY_NAME, CONF_SENSORS, CONF_DEVICE_CLASS)
+    BinarySensorDevice,
+    ENTITY_ID_FORMAT,
+    PLATFORM_SCHEMA,
+    DEVICE_CLASSES_SCHEMA,
+)
+from homeassistant.const import ATTR_FRIENDLY_NAME, CONF_SENSORS, CONF_DEVICE_CLASS
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import async_generate_entity_id
 
 
 _LOGGER = logging.getLogger(__name__)
 
-CONF_INITIAL_STATE = 'initial_state'
-CONF_LISTEN_PORT = 'listen_port'
-CONF_RESET_DELAY = 'reset_delay'
-CONF_RESET_PATH = 'reset_path'
-CONF_SET_PATH = 'set_path'
+CONF_INITIAL_STATE = "initial_state"
+CONF_LISTEN_PORT = "listen_port"
+CONF_RESET_DELAY = "reset_delay"
+CONF_RESET_PATH = "reset_path"
+CONF_SET_PATH = "set_path"
 
 DEFAULT_INITIAL_STATE = False
 DEFAULT_LISTEN_PORT = 8130
 
-SENSOR_SCHEMA = vol.Schema({
-    vol.Optional(ATTR_FRIENDLY_NAME): cv.string,
-    vol.Optional(CONF_DEVICE_CLASS): DEVICE_CLASSES_SCHEMA,
-    vol.Optional(CONF_INITIAL_STATE, default=DEFAULT_INITIAL_STATE):
-        cv.boolean,
-    vol.Optional(CONF_RESET_DELAY, default=0): cv.positive_int,
-    vol.Optional(CONF_RESET_PATH): cv.string,
-    vol.Required(CONF_SET_PATH): cv.string
-})
+SENSOR_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_FRIENDLY_NAME): cv.string,
+        vol.Optional(CONF_DEVICE_CLASS): DEVICE_CLASSES_SCHEMA,
+        vol.Optional(CONF_INITIAL_STATE, default=DEFAULT_INITIAL_STATE): cv.boolean,
+        vol.Optional(CONF_RESET_DELAY, default=0): cv.positive_int,
+        vol.Optional(CONF_RESET_PATH): cv.string,
+        vol.Required(CONF_SET_PATH): cv.string,
+    }
+)
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Optional(CONF_LISTEN_PORT, default=DEFAULT_LISTEN_PORT): cv.port,
-    vol.Required(CONF_SENSORS): vol.Schema({cv.slug: SENSOR_SCHEMA})
-})
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+    {
+        vol.Optional(CONF_LISTEN_PORT, default=DEFAULT_LISTEN_PORT): cv.port,
+        vol.Required(CONF_SENSORS): vol.Schema({cv.slug: SENSOR_SCHEMA}),
+    }
+)
 
 
 @asyncio.coroutine
@@ -71,15 +76,20 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
         reset_path = device_config.get(CONF_RESET_PATH)
 
         if set_path == reset_path:
-            _LOGGER.error("set_path and reset_path %s cannot be the same",
-                          set_path)
+            _LOGGER.error("set_path and reset_path %s cannot be the same", set_path)
             return False
 
-        is_toggle = (reset_path is None and reset_delay == 0)
+        is_toggle = reset_path is None and reset_delay == 0
 
-        this_sensor = HttpServerBinarySensor(hass, device, friendly_name,
-                                             device_class, reset_delay,
-                                             initial_state, is_toggle)
+        this_sensor = HttpServerBinarySensor(
+            hass,
+            device,
+            friendly_name,
+            device_class,
+            reset_delay,
+            initial_state,
+            is_toggle,
+        )
         request_paths[set_path] = this_sensor.set_state
         if reset_path is not None:
             request_paths[reset_path] = this_sensor.reset_state
@@ -114,10 +124,12 @@ class RequestHandler(BaseHTTPRequestHandler):
     # pylint: disable=redefined-builtin
     def log_message(self, format, *args):
         """Log HTTP access to HA log (don't log to stderr)."""
-        _LOGGER.info("%s - - [%s] %s",
-                     self.address_string(),
-                     self.log_date_time_string(),
-                     (format % args))
+        _LOGGER.info(
+            "%s - - [%s] %s",
+            self.address_string(),
+            self.log_date_time_string(),
+            (format % args),
+        )
 
 
 class HTTPThread(threading.Thread):
@@ -128,7 +140,7 @@ class HTTPThread(threading.Thread):
         super().__init__()
 
         self.daemon = True
-        self.server = HTTPServer(('', port), RequestHandler)
+        self.server = HTTPServer(("", port), RequestHandler)
         self.server.request_paths = request_paths
 
     def run(self):
@@ -149,12 +161,19 @@ class HTTPThread(threading.Thread):
 class HttpServerBinarySensor(BinarySensorDevice):
     """representation of a httpserver binary sensor."""
 
-    def __init__(self, hass, device, friendly_name, device_class,
-                 reset_delay, initial_state, is_toggle):
+    def __init__(
+        self,
+        hass,
+        device,
+        friendly_name,
+        device_class,
+        reset_delay,
+        initial_state,
+        is_toggle,
+    ):
         """Initialize the httpserver sensor."""
         self.hass = hass
-        self.entity_id = async_generate_entity_id(
-            ENTITY_ID_FORMAT, device, hass=hass)
+        self.entity_id = async_generate_entity_id(ENTITY_ID_FORMAT, device, hass=hass)
         self._name = friendly_name
         self._device_class = device_class
         self._reset_delay = reset_delay
